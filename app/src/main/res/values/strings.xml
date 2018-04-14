@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">TenFingerTyping</string>
+    <string name="typeText1">this is a simple paragraph that is meant to be nice and easy to type which is why there will be no commas no periods or any capital letters so i guess this means that it cannot really be considered a paragraph but just a series of run on sentences this should help you get faster at typing as im trying not to use too many difficult words in it although i think that i might start making it hard by including some more difficult letters I\'m typing pretty quickly so forgive me for any mistakes i think that i will not just tell you a story about the time i went to the zoo and found a monkey.</string>
+    <string name="typeText">this is a simple paragraph that is meant to be nice and easy to type.</string>
+    <string name="cpmLabel">cpm</string>
+    <string name="left">left</string>
+    <string name="right">right</string>
+    <string name="startingCharacter">c</string>
+    <string name="bluetooth_device">Bluetooth Device</string>
+    <string name="connect">connect</string>
+    <string name="text_source">text source</string>
+    <string name="cancel">Cancel</string>
+</resources>

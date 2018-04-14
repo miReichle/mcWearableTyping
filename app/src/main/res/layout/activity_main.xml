@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.widget.RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="michaelreichle.tenfingertyping.MainActivity">
+
+    <TextView
+        android:id="@+id/textRightView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/textLeftView"
+        android:textSize="20sp"
+        android:layout_toEndOf="@+id/currentChar"
+        android:text="@string/right" />
+
+    <SeekBar
+        android:id="@+id/seekBar"
+        android:layout_width="200dp"
+        android:layout_height="30dp"
+        android:max="500"
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="477dp"
+        android:layout_alignBottom="@+id/floatingActionButton"
+        android:layout_toStartOf="@+id/floatingActionButton" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/floatingActionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        app:fabSize="normal"
+        app:srcCompat="@drawable/ic_play"
+        tools:layout_editor_absoluteY="455dp"
+        tools:layout_editor_absoluteX="328dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="18dp" />
+
+    <TextView
+        android:id="@+id/cpmLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:text="@string/cpmLabel"
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="434dp"
+        android:layout_marginStart="15dp"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/seekBar"
+        android:layout_below="@+id/textView"
+        android:layout_above="@+id/cpm" />
+
+    <TextView
+        android:id="@+id/cpm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="15dp"
+        android:layout_toStartOf="@+id/seekBar"
+        android:ems="10"
+        android:text=""
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="434dp"
+        android:layout_alignBottom="@+id/seekBar" />
+
+    <TextView
+        android:id="@+id/currentChar"
+        android:layout_width="60sp"
+        android:layout_height="60dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="39dp"
+        android:ems="10"
+        android:text="@string/startingCharacter"
+        android:textAllCaps="true"
+        android:gravity="center"
+        android:textColor="@color/colorAccent"
+        android:layout_marginBottom="10dp"
+        android:textSize="40sp" />
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/cpmLabel"
+        android:ems="10"
+        android:text="@string/typeText"
+        android:layout_above="@+id/floatingActionButton"
+        android:layout_alignEnd="@+id/floatingActionButton"
+        android:layout_below="@+id/currentChar" />
+
+    <TextView
+        android:id="@+id/textLeftView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/text"
+        android:layout_marginBottom="20dp"
+        android:layout_toStartOf="@+id/currentChar"
+        android:textSize="20sp"
+        android:text="@string/left" />
+
+</android.widget.RelativeLayout>
