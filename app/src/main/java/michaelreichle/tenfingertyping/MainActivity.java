@@ -123,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
                 maxAllowedCpm = -1;
             } else if (BluetoothService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 discovered = true;
+                bluetoothService.getMaxFrequency();
+                bluetoothService.getMonitorCount();
             } else if (BluetoothService.ACTION_DATA_AVAILABLE.equals(action)) {
                 if (BluetoothService.RESULT_MONITOR_COUNT.equals(intent.getStringExtra(BluetoothService.RESULT_DATA))) {
                     monitorCount = intent.getIntExtra(BluetoothService.EXTRA_DATA, -1);
@@ -133,9 +135,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
-
-
-
 
     private void reset() {
         String l = getResources().getString(R.string.left);
@@ -293,16 +292,24 @@ public class MainActivity extends AppCompatActivity {
 
     private byte[] noVibration() {
         if (monitorCount != -1) {
-            return new byte[monitorCount];
+            return new byte[2*monitorCount];
         } else {
             Log.d(BLE_LOG, "Monitor count not set yet.");
-            return new byte[5];
+            return new byte[10];
         }
     }
 
     private byte[] getVibrationScheme(char c) {
-        // TODO: check monitor count
-        return new byte[5];
+        int index = CharacterMap.getFingerIndex(c);
+        index *= 2; // 2 bytes per vibration engine
+        if (index == CharacterMap.NO_FINGER || index >= monitorCount) {
+            return noVibration();
+        } else {
+            byte[] res = new byte[2*monitorCount];
+            res[index] = 0xF;
+            res[index + 1] = 0xF;
+            return res;
+        }
     }
 
     private void stopWriting() {

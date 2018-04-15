@@ -4,6 +4,6 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="backgroundItemNotSelected">#EEEEEE</color>
-    <color name="backgroundItemSelected">#FF4081</color>
+    <color name="backgroundItemSelected">#ff9999</color>
     <color name="grey">#CCC</color>
 </resources>

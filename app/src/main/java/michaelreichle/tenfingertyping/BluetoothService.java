@@ -63,7 +63,7 @@ public class BluetoothService extends Service {
     public final static UUID MAXIMAL_FREQUENCE_ID    = UUID.fromString("713D0002-503E-4C75-BA94-3148F18D941E");
     public final static UUID SET_VIBRATION_ENGINE_ID = UUID.fromString("713D0003-503E-4C75-BA94-3148F18D941E");
 
-    public void getMaxFrequency() { //TODO use
+    public void getMaxFrequency() {
         if (connectionState == STATE_DISCONNECTED || !discoveredServices) {
             Log.w(TAG, "Can't get frequency yet.");
             return;
