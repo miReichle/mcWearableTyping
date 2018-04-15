@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
 
     private final static int DEVICE_SCAN_REQUEST = 5;
 
-    private SeekBar cpmBar;
     private FloatingActionButton playFab;
     private TextView cpmView;
     private TextView charView;
@@ -46,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private int currentCharIndex = 0;
 
     private int cpm;
-    private int MAX_CPM = 510; // TODO: compute by maximum vibration frequency
+    private int MAX_CPM = 510;
     private int MIN_CPM = 10;
     private int maxAllowedCpm = -1;
 
@@ -56,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
     final Handler handler = new Handler();
     final Runnable runnable = new Runnable() {
         public void run() {
-            Log.d(RUNNABLE_LOG,"Handler is working");
             if (text.isEmpty() || !isRunning){
                 handler.removeCallbacks(this);
                 Log.d(RUNNABLE_LOG,"stopped");
@@ -174,9 +172,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(gattUpdateReceiver);
-        unbindService(connection);
+        if (bound && connection != null) {
+            unbindService(connection);
+        }
         bound = false;
-
     }
 
     @Override
@@ -236,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void init() {
-        cpmBar= (SeekBar) findViewById(R.id.seekBar);
+        SeekBar cpmBar = (SeekBar) findViewById(R.id.seekBar);
         textView = (TextView) findViewById(R.id.text);
         playFab = (FloatingActionButton) findViewById(floatingActionButton);
         cpmView = (TextView) findViewById(R.id.cpm);
@@ -279,13 +278,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void notifyWearable(char c) {
-        if (deviceReady()) {
+        if (deviceReady() && cpm < maxAllowedCpm ) {
             bluetoothService.setVibration(getVibrationScheme(c));
+        } else if (deviceReady() && bluetoothService.isVibrating()) {
+            bluetoothService.setVibration(noVibration());
         }
     }
 
     private boolean deviceReady() {
-        return bound && cpm < maxAllowedCpm && connected && discovered && monitorCount != -1;
+        return bound && connected && discovered && monitorCount != -1;
     }
 
     private byte[] noVibration() {
@@ -326,5 +327,8 @@ public class MainActivity extends AppCompatActivity {
     private void setCpm(int value) {
         this.cpm = value;
         cpmView.setText(String.valueOf(value));
+        if (maxAllowedCpm != -1 && value > maxAllowedCpm) {
+            Toast.makeText(this, "Chosen cpm is too high for wearable.", Toast.LENGTH_SHORT).show();
+        }
     }
 }

@@ -132,7 +132,6 @@ public class DeviceScanActivity extends AppCompatActivity {
     }
 
     // TODO: check if device can be found
-
     private void initBLE() {
         final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         bluetoothAdapter = bluetoothManager.getAdapter();
@@ -146,7 +145,10 @@ public class DeviceScanActivity extends AppCompatActivity {
     private void scanDevices(final boolean enable) {
         setScanning(enable);
         if (enable) {
-            initBLE();
+            if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+                Toast.makeText(this, "Scan failed.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             ArrayList<ScanFilter> filters = new ArrayList<>();
             for (final int BLE_NAME_ID : BLE_NAME_IDS) {
                 // only search for wearables
@@ -173,6 +175,12 @@ public class DeviceScanActivity extends AppCompatActivity {
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initBLE();
     }
 
     @Override

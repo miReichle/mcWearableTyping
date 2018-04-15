@@ -14,12 +14,12 @@ import android.widget.Toast;
 
 import java.util.UUID;
 
+import static android.bluetooth.BluetoothGattCharacteristic.FORMAT_UINT32;
 import static android.bluetooth.BluetoothGattCharacteristic.FORMAT_UINT8;
 
 /**
  * By michaelreichle on 14.04.2018 at 22:23.
  */
-
 public class BluetoothService extends Service {
 
     private final static String TAG = "service";
@@ -42,7 +42,8 @@ public class BluetoothService extends Service {
     private static final int STATE_CONNECTED = 2;
 
     private BluetoothGatt gatt;
-    private static boolean discoveredServices = false;
+    private boolean discoveredServices = false;
+    private boolean isVibrating = false;
 
     public static final String DEVICE_ARG = "device";
 
@@ -157,8 +158,14 @@ public class BluetoothService extends Service {
             Log.d(TAG, String.format("Received monitor count: %d", monitorCount));
             intent.putExtra(EXTRA_DATA, monitorCount);
             intent.putExtra(RESULT_DATA, RESULT_MONITOR_COUNT);
+        } else if (SET_VIBRATION_ENGINE_ID.equals(characteristic.getUuid())) {
+            isVibrating = characteristic.getIntValue(FORMAT_UINT8, 0) > 0 || characteristic.getIntValue(FORMAT_UINT32, 1) > 0;
         }
         sendBroadcast(intent);
+    }
+
+    public boolean isVibrating() {
+        return isVibrating;
     }
 
     @Override
