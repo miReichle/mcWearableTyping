@@ -101,7 +101,6 @@ public class MainActivity extends AppCompatActivity {
             BluetoothService.BluetoothBinder binder = (BluetoothService.BluetoothBinder) service;
             bluetoothService = binder.getService();
             bound = true;
-            // TODO: check frequency, set maxAllowedCpm
         }
 
         @Override
@@ -148,6 +147,9 @@ public class MainActivity extends AppCompatActivity {
         charView.setText(c);
         textView.setText(t);
         currentWord = "";
+        text = t;
+        currentWord = text.substring(0, text.indexOf(' '));
+        currentCharIndex = 0;
         stopWriting();
     }
 

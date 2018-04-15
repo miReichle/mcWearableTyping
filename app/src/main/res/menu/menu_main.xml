@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/text_options"
         android:icon="@drawable/ic_text"
+        app:showAsAction="never"
         android:title="@string/text_source" />
     <item android:id="@+id/connect"
         android:icon="@drawable/ic_bluetooth_search"
         android:title="@string/connect"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="never"/>
 </menu>

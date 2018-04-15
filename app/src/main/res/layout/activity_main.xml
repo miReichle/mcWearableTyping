@@ -6,15 +6,6 @@
     android:layout_height="match_parent"
     tools:context="michaelreichle.tenfingertyping.MainActivity">
 
-    <TextView
-        android:id="@+id/textRightView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/textLeftView"
-        android:textSize="20sp"
-        android:layout_toEndOf="@+id/currentChar"
-        android:text="@string/right" />
-
     <SeekBar
         android:id="@+id/seekBar"
         android:layout_width="231dp"
@@ -38,7 +29,8 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:focusable="true" />
 
     <TextView
         android:id="@+id/cpmLabel"
@@ -64,39 +56,57 @@
         tools:layout_editor_absoluteY="434dp" />
 
     <TextView
-        android:id="@+id/currentChar"
-        android:layout_width="60sp"
-        android:layout_height="60dp"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="15dp"
-        android:ems="10"
-        android:gravity="center"
-        android:text="@string/startingCharacter"
-        android:textAllCaps="true"
-        android:textColor="@color/colorAccent"
-        android:textSize="40sp" />
-
-    <TextView
         android:id="@+id/text"
         android:layout_width="match_parent"
-        android:layout_height="343dp"
-        android:layout_alignParentBottom="true"
+        android:layout_height="355dp"
+        android:layout_above="@+id/cpmLabel"
         android:layout_alignParentStart="true"
-        android:layout_marginBottom="85dp"
+        android:layout_alignTop="@id/floatingActionButton"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="-363dp"
         android:background="@color/grey"
         android:ems="10"
         android:padding="16dp"
         android:text="@string/typeText" />
 
-    <TextView
-        android:id="@+id/textLeftView"
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:id="@+id/currentViewLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/text"
-        android:layout_marginBottom="20dp"
-        android:layout_toStartOf="@+id/currentChar"
-        android:textSize="20sp"
-        android:text="@string/left" />
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true">
+
+        <TextView
+            android:id="@+id/textRightView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/currentChar"
+            android:layout_toEndOf="@+id/currentChar"
+            android:text="@string/right"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/textLeftView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/currentChar"
+            android:layout_toStartOf="@+id/currentChar"
+            android:text="@string/left"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/currentChar"
+            android:layout_width="60sp"
+            android:layout_height="60dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="15dp"
+            android:ems="10"
+            android:gravity="center"
+            android:text="@string/startingCharacter"
+            android:textAllCaps="true"
+            android:textColor="@color/colorAccent"
+            android:textSize="40sp" />
+    </RelativeLayout>
 
 </android.widget.RelativeLayout>

@@ -10,6 +10,7 @@ public class DeviceHolder {
     private BluetoothDevice device;
     private String name;
     private String mac;
+    public final static String DEFAULT_DEVICE_NAME = "unnamed";
 
     public DeviceHolder(BluetoothDevice device, String name, String mac) {
         this.device = device;
@@ -26,7 +27,7 @@ public class DeviceHolder {
     }
 
     public String getName() {
-        return name;
+        return (name == null) ? DEFAULT_DEVICE_NAME : name;
     }
 
     public void setName(String name) {
@@ -49,15 +50,14 @@ public class DeviceHolder {
         }
 
         DeviceHolder holder = (DeviceHolder) obj;
-
-        return holder.name.equals(name) && holder.mac.equals(mac);
+        return holder.getName().equals(this.getName()) && holder.getMac().equals(this.getMac());
     }
 
     @Override
     public int hashCode() {
         int result = 17;
-        result = 31 * result + name.hashCode();
-        result = 31 * result + mac.hashCode();
+        result = 31 * result + getName().hashCode();
+        result = 31 * result + getMac().hashCode();
         return result;
     }
 }

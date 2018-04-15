@@ -11,7 +11,6 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.ParcelUuid;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -20,6 +19,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -35,18 +35,17 @@ public class DeviceScanActivity extends AppCompatActivity {
     public static final int SUCCESS = 1;
     public static final String DEVICE_EXTRA = "device_extra";
 
-
     private static final long SCAN_PERIOD = 10000;
     private static final int BLE_NAME_IDS[] = {4};
     private final static int REQUEST_ENABLE_BT = 1;
-    private static final String CURRENT_DEVICE_EXTRA = "device_extra";
+    private static final String CURRENT_DEVICE_EXTRA = "cur_device_extra";
 
     // wearable specific values
     private final UUID SERVICE_UUID = new UUID(0x713D0000503E4C75L, 0xBA943148F18D941EL);
 
-    private ListView deviceView;
     private DeviceAdapter adapter;
     private FloatingActionButton fabSearch;
+    private TextView selectedDeviceView;
 
     private BluetoothDevice currentDevice;
 
@@ -63,7 +62,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     }
 
     private void init() {
-        deviceView = (ListView) findViewById(R.id.device_list_view);
+        ListView deviceView = (ListView) findViewById(R.id.device_list_view);
 
         adapter = new DeviceAdapter(this, new ArrayList<DeviceHolder>());
         deviceView.setAdapter(adapter);
@@ -76,6 +75,12 @@ public class DeviceScanActivity extends AppCompatActivity {
                 Toast.makeText(DeviceScanActivity.this, "Selected " + holder.getName() + ".", Toast.LENGTH_SHORT).show();
             }
         });
+        selectedDeviceView = (TextView) findViewById(R.id.selectedDevice);
+        Bundle b = getIntent().getExtras();
+        if (b != null) {
+            currentDevice = b.getParcelable(CURRENT_DEVICE_EXTRA);
+            selectedDeviceView.setText((currentDevice != null) ? currentDevice.getName() : "none");
+        }
 
         Button buttonCancel = (Button) findViewById(R.id.cancelButton);
         Button buttonConnect = (Button) findViewById(R.id.connectButton);
@@ -133,8 +138,11 @@ public class DeviceScanActivity extends AppCompatActivity {
 
     // TODO: check if device can be found
     private void initBLE() {
-        final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        bluetoothAdapter = bluetoothManager.getAdapter();
+        // TODO: check for services
+        if (bluetoothAdapter == null) {
+            final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+            bluetoothAdapter = bluetoothManager.getAdapter();
+        }
 
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -153,13 +161,13 @@ public class DeviceScanActivity extends AppCompatActivity {
             for (final int BLE_NAME_ID : BLE_NAME_IDS) {
                 // only search for wearables
                 ScanFilter filter = new ScanFilter.Builder()
-                        .setDeviceName("TECO WEARABLE " + BLE_NAME_ID)
-                        .setServiceUuid(new ParcelUuid(SERVICE_UUID))
+                        //.setDeviceName("TECO WEARABLE " + BLE_NAME_ID)
+                        //.setServiceUuid(new ParcelUuid(SERVICE_UUID))
                         .build();
                 filters.add(filter);
             }
             ScanSettings settings = new ScanSettings.Builder()
-                    .setReportDelay(0)
+                    .setReportDelay(3000)
                     .build();
             bluetoothAdapter.getBluetoothLeScanner().startScan(filters, settings, new ScanningCallback());
         } else {
@@ -181,6 +189,15 @@ public class DeviceScanActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         initBLE();
+        String name;
+        if (currentDevice == null) {
+            name = "none";
+        } else if (currentDevice.getName() == null) {
+            name = DeviceHolder.DEFAULT_DEVICE_NAME;
+        } else {
+            name = currentDevice.getName();
+        }
+        selectedDeviceView.setText((currentDevice != null) ?  name : "none");
     }
 
     @Override
@@ -196,8 +213,13 @@ public class DeviceScanActivity extends AppCompatActivity {
 
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
+            if (!scanning) {
+                Log.d(MainActivity.BLE_LOG, "Scan result while not scanning.");
+                return;
+            }
             Toast.makeText(DeviceScanActivity.this, "result found", Toast.LENGTH_SHORT).show();
             BluetoothDevice bleDevice = result.getDevice();
+
             DeviceHolder device = new DeviceHolder(bleDevice, bleDevice.getName(), bleDevice.getAddress());
             if (!adapter.contains(device)) {
                 adapter.add(device);
@@ -214,6 +236,10 @@ public class DeviceScanActivity extends AppCompatActivity {
 
         @Override
         public void onBatchScanResults(List<ScanResult> results) {
+            if (!scanning) {
+                Log.d(MainActivity.BLE_LOG, "Scan result while not scanning.");
+                return;
+            }
             for (ScanResult result : results) {
                 BluetoothDevice bleDevice = result.getDevice();
                 DeviceHolder device = new DeviceHolder(bleDevice, bleDevice.getName(), bleDevice.getAddress());
@@ -233,11 +259,11 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onScanFailed(int errorCode) {
+        public void onScanFailed(final int errorCode) {
             DeviceScanActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
                     setScanning(false);
-                    Toast.makeText(DeviceScanActivity.this, "Scan failed", Toast.LENGTH_LONG).show();
+                    Toast.makeText(DeviceScanActivity.this, "Scan failed with error code " + errorCode + ".", Toast.LENGTH_LONG).show();
                 }
             });
         }
