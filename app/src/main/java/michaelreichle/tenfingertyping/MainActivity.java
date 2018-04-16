@@ -189,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(gattUpdateReceiver);
         unbindBluetoothService();
+        stopWriting();
         onActivityResult = false;
     }
 
@@ -314,10 +315,10 @@ public class MainActivity extends AppCompatActivity {
 
     private byte[] noVibration() {
         if (monitorCount != -1) {
-            return new byte[2*monitorCount];
+            return new byte[monitorCount];
         } else {
             Log.d(BLE_LOG, "Monitor count not set yet.");
-            return new byte[10];
+            return new byte[4];
         }
     }
 
@@ -328,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
             return noVibration();
         } else {
             byte[] res = new byte[monitorCount];
-            res[index] = 0xF;
+            res[index] = (byte) 0xFF;
             return res;
         }
     }

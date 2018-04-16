@@ -13,6 +13,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 import static android.bluetooth.BluetoothGattCharacteristic.FORMAT_UINT32;
@@ -96,10 +97,10 @@ public class BluetoothService extends Service {
             Log.w(TAG, "Can't set vibration yet.");
             return false;
         }
-        values = new byte[4];
-        values[0] = 0xF; // TODO
-        values[1] = 0xF;
         BluetoothGattCharacteristic vibrationCharacteristic = gatt.getService(WEARABLE_SERVICE).getCharacteristic(SET_VIBRATION_ENGINE_ID);
+        Log.d(TAG, "old value: " + Arrays.toString(vibrationCharacteristic.getValue()));
+        vibrationCharacteristic.setValue(values);
+        Log.d(TAG, "new value: " + Arrays.toString(vibrationCharacteristic.getValue()));
         gatt.writeCharacteristic(vibrationCharacteristic);
         return true;
     }
@@ -116,13 +117,11 @@ public class BluetoothService extends Service {
                 broadcastUpdate(intentAction);
                 Log.i(TAG, "Connected to GATT server.");
                 Log.i(TAG, "Attempting to start service discovery:" + gatt.discoverServices());
-                Toast.makeText(BluetoothService.this, "Connected to device.", Toast.LENGTH_SHORT).show();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 connectionState = STATE_DISCONNECTED;
                 discoveredServices = false;
                 Log.d(TAG, "Disconnected from GATT server.");
-                Toast.makeText(BluetoothService.this, "Disconnected from device. Attempting reconnect...", Toast.LENGTH_SHORT).show();
                 broadcastUpdate(intentAction);
             }
         }
