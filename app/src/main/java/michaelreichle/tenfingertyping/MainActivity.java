@@ -1,7 +1,6 @@
 package michaelreichle.tenfingertyping;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -53,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isRunning = false;
     DeviceHolder deviceHolder = null;
+    private boolean onActivityResult = false;
 
     final Handler handler = new Handler();
     final Runnable runnable = new Runnable() {
@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean connected = false;
     private boolean discovered = false;
     boolean bound = false;
-    private int monitorCount = -1;
+    private int monitorCount = 4;
     /** Defines callbacks for bluetoothService binding, passed to bindService() */
     private ServiceConnection connection = new ServiceConnection() {
 
@@ -102,37 +102,41 @@ public class MainActivity extends AppCompatActivity {
             // We've bound to BluetoothService, cast the IBinder and get LocalService instance
             BluetoothService.BluetoothBinder binder = (BluetoothService.BluetoothBinder) service;
             bluetoothService = binder.getService();
-            bound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
             maxAllowedCpm = -1;
-            bound = false;
         }
     };
 
     private final BroadcastReceiver gattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
+            final String action = intent.getStringExtra(BluetoothService.ACTION_ARG);
+
             if (BluetoothService.ACTION_GATT_CONNECTED.equals(action)) {
                 connected = true;
+                Toast.makeText(MainActivity.this, "connected", Toast.LENGTH_SHORT).show();
             } else if (BluetoothService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 connected = false;
                 discovered = false;
-                monitorCount = -1;
                 maxAllowedCpm = -1;
+                Toast.makeText(MainActivity.this, "disconnected", Toast.LENGTH_SHORT).show();
             } else if (BluetoothService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 discovered = true;
-                bluetoothService.getMaxFrequency();
-                bluetoothService.getMonitorCount();
+                if (!bluetoothService.getMaxFrequency()) {
+                    Toast.makeText(MainActivity.this, "Couldn't get frequency and monitor count.", Toast.LENGTH_SHORT).show();
+                }
             } else if (BluetoothService.ACTION_DATA_AVAILABLE.equals(action)) {
                 if (BluetoothService.RESULT_MONITOR_COUNT.equals(intent.getStringExtra(BluetoothService.RESULT_DATA))) {
                     monitorCount = intent.getIntExtra(BluetoothService.EXTRA_DATA, -1);
                 } else if (BluetoothService.RESULT_FREQUENCY.equals(intent.getStringExtra(BluetoothService.RESULT_DATA))) {
                     int frequency = intent.getIntExtra(BluetoothService.EXTRA_DATA, -1);
                     maxAllowedCpm = frequency * 60;
+                }
+                if (deviceReady()) {
+                    Toast.makeText(MainActivity.this, "Device ready!", Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -157,28 +161,35 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(gattUpdateReceiver, new IntentFilter());
-
+        LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(gattUpdateReceiver, new IntentFilter(BluetoothService.BROADCAST_BLE_SERVICE));
         if (deviceHolder != null && deviceHolder.getDevice() != null) {
-            bindBluetoothService();
+            if (!onActivityResult) {
+                bindBluetoothService();
+            }
         }
     }
 
     private void bindBluetoothService() {
-        if (connection != null) unbindService(connection);
+        unbindBluetoothService();
         Intent intent = new Intent(this, BluetoothService.class);
-        intent.putExtra(BluetoothService.DEVICE_ARG, deviceHolder);
+        intent.putExtra(BluetoothService.DEVICE_ARG, deviceHolder.getDevice());
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        bound = true;
+    }
+
+    private void unbindBluetoothService() {
+        if (bound) {
+            unbindService(connection);
+        }
+        bound = false;
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(gattUpdateReceiver);
-        if (bound && connection != null) {
-            unbindService(connection);
-        }
-        bound = false;
+        unbindBluetoothService();
+        onActivityResult = false;
     }
 
     @Override
@@ -218,9 +229,10 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == Activity.RESULT_OK) {
                     deviceHolder = data.getParcelableExtra(DeviceScanActivity.DEVICE_EXTRA);
                     bindBluetoothService();
+                    onActivityResult = true;
                     Toast.makeText(this, "Selected " + deviceHolder.getName() + ".", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, "Did not connect to a BLE device.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Did not select a new BLE device.", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }
@@ -233,6 +245,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         init();
+
+        // start service so it doesn't get killed when changing activities.
+        Intent intent = new Intent(this, BluetoothService.class);
+        startService(intent);
     }
 
 
@@ -282,7 +298,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void notifyWearable(char c) {
         if (deviceReady() && cpm < maxAllowedCpm ) {
-            bluetoothService.setVibration(getVibrationScheme(c));
+            if (!bluetoothService.setVibration(getVibrationScheme(c))) {
+                Log.d(BLE_LOG, "can't vibrate");
+            } else {
+                Log.d(BLE_LOG, "vibrating");
+            }
         } else if (deviceReady() && bluetoothService.isVibrating()) {
             bluetoothService.setVibration(noVibration());
         }
@@ -302,14 +322,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private byte[] getVibrationScheme(char c) {
+        c = Character.toLowerCase(c);
         int index = CharacterMap.getFingerIndex(c);
-        index *= 2; // 2 bytes per vibration engine
         if (index == CharacterMap.NO_FINGER || index >= monitorCount) {
             return noVibration();
         } else {
-            byte[] res = new byte[2*monitorCount];
+            byte[] res = new byte[monitorCount];
             res[index] = 0xF;
-            res[index + 1] = 0xF;
             return res;
         }
     }

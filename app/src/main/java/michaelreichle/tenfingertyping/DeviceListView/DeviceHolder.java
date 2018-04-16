@@ -68,7 +68,7 @@ public class DeviceHolder implements Parcelable {
 
     public boolean isSupported() {
         Log.d(MainActivity.BLE_LOG, "test name for wearable: " + getName());
-        return getName().contains("TECO WEARABLE 4");
+        return getName().contains("TECO Wearable 4");
     }
 
 

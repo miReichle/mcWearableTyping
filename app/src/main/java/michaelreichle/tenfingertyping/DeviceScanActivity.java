@@ -111,17 +111,18 @@ public class DeviceScanActivity extends AppCompatActivity {
     private void setScanning(boolean scanning) {
         this.scanning = scanning;
         if (scanning) {
-            Toast.makeText(this, "scanning...", Toast.LENGTH_LONG).show();
             fabSearch.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_stop));
         } else {
-            Toast.makeText(this, "stopped scanning.", Toast.LENGTH_SHORT).show();
             fabSearch.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_search));
         }
     }
 
     private void connect() {
         Intent intent = new Intent();
-        if (currentDeviceHolder == null || !currentDeviceHolder.isSupported()) {
+        if (currentDeviceHolder == null) {
+            setResult(NONE, intent);
+        } else if (!currentDeviceHolder.isSupported()) {
+            Toast.makeText(this, "Device not supported.", Toast.LENGTH_SHORT).show();
             setResult(NONE, intent);
         } else {
             intent.putExtra(DEVICE_EXTRA, currentDeviceHolder);
