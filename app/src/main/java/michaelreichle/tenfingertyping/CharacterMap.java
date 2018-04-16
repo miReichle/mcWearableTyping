@@ -17,7 +17,6 @@ public class CharacterMap {
     public static final int LITTLE_FINGER = 0;
     public static final int NO_FINGER = -1;
 
-
     private static Map<Character, Integer> getMapping() {
         Map<Character, Integer> result = new HashMap<>();
         result.put('q', RING_FINGER);

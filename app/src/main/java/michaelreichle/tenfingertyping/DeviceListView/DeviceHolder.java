@@ -1,12 +1,17 @@
 package michaelreichle.tenfingertyping.DeviceListView;
 
 import android.bluetooth.BluetoothDevice;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.util.Log;
+
+import michaelreichle.tenfingertyping.MainActivity;
 
 /**
  * By michaelreichle on 14.04.2018 at 16:50.
  */
 
-public class DeviceHolder {
+public class DeviceHolder implements Parcelable {
     private BluetoothDevice device;
     private String name;
     private String mac;
@@ -60,4 +65,40 @@ public class DeviceHolder {
         result = 31 * result + getMac().hashCode();
         return result;
     }
+
+    public boolean isSupported() {
+        Log.d(MainActivity.BLE_LOG, "test name for wearable: " + getName());
+        return getName().contains("TECO WEARABLE 4");
+    }
+
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeParcelable(this.device, flags);
+        dest.writeString(this.name);
+        dest.writeString(this.mac);
+    }
+
+    public DeviceHolder(Parcel in) {
+        this.device = in.readParcelable(BluetoothDevice.class.getClassLoader());
+        this.name = in.readString();
+        this.mac = in.readString();
+    }
+
+    public static final Creator<DeviceHolder> CREATOR = new Creator<DeviceHolder>() {
+        @Override
+        public DeviceHolder createFromParcel(Parcel source) {
+            return new DeviceHolder(source);
+        }
+
+        @Override
+        public DeviceHolder[] newArray(int size) {
+            return new DeviceHolder[size];
+        }
+    };
 }

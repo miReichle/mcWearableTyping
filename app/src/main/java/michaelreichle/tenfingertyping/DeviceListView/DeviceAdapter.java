@@ -84,8 +84,10 @@ public class DeviceAdapter extends BaseAdapter {
     }
 
     public void setSelectedPosition(int position) {
-        this.selectedPosition = position;
-        notifyDataSetChanged();
+        if (position >= 0 && position < getCount()) {
+            this.selectedPosition = position;
+            notifyDataSetChanged();
+        }
     }
 
     public int getSelectedPosition() {

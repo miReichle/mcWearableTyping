@@ -23,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,19 +36,18 @@ public class DeviceScanActivity extends AppCompatActivity {
     public static final int SUCCESS = 1;
     public static final String DEVICE_EXTRA = "device_extra";
 
-    private static final long SCAN_PERIOD = 10000;
     private static final int BLE_NAME_IDS[] = {4};
     private final static int REQUEST_ENABLE_BT = 1;
     private static final String CURRENT_DEVICE_EXTRA = "cur_device_extra";
 
     // wearable specific values
-    private final UUID SERVICE_UUID = new UUID(0x713D0000503E4C75L, 0xBA943148F18D941EL);
+    private final UUID SERVICE_UUID = UUID.fromString("713D0000-503E-4C75-BA94-3148F18D941E");
 
     private DeviceAdapter adapter;
     private FloatingActionButton fabSearch;
     private TextView selectedDeviceView;
-
-    private BluetoothDevice currentDevice;
+    private ScanningCallback callback;
+    private DeviceHolder currentDeviceHolder;
 
     private BluetoothAdapter bluetoothAdapter;
     private boolean scanning;
@@ -63,23 +63,21 @@ public class DeviceScanActivity extends AppCompatActivity {
 
     private void init() {
         ListView deviceView = (ListView) findViewById(R.id.device_list_view);
-
+        callback = new ScanningCallback();
         adapter = new DeviceAdapter(this, new ArrayList<DeviceHolder>());
         deviceView.setAdapter(adapter);
         deviceView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 adapter.setSelectedPosition(i);
-                DeviceHolder holder = (DeviceHolder) adapter.getItem(i);
-                currentDevice = holder.getDevice();
-                Toast.makeText(DeviceScanActivity.this, "Selected " + holder.getName() + ".", Toast.LENGTH_SHORT).show();
+                currentDeviceHolder = (DeviceHolder) adapter.getItem(i);
             }
         });
         selectedDeviceView = (TextView) findViewById(R.id.selectedDevice);
         Bundle b = getIntent().getExtras();
         if (b != null) {
-            currentDevice = b.getParcelable(CURRENT_DEVICE_EXTRA);
-            selectedDeviceView.setText((currentDevice != null) ? currentDevice.getName() : "none");
+            currentDeviceHolder = b.getParcelable(CURRENT_DEVICE_EXTRA);
+            selectedDeviceView.setText((currentDeviceHolder != null) ? currentDeviceHolder.getName() : "none");
         }
 
         Button buttonCancel = (Button) findViewById(R.id.cancelButton);
@@ -123,15 +121,17 @@ public class DeviceScanActivity extends AppCompatActivity {
 
     private void connect() {
         Intent intent = new Intent();
-        intent.putExtra(DEVICE_EXTRA, currentDevice);
-        setResult((currentDevice == null) ? NONE : SUCCESS, intent);
+        if (currentDeviceHolder == null || !currentDeviceHolder.isSupported()) {
+            setResult(NONE, intent);
+        } else {
+            intent.putExtra(DEVICE_EXTRA, currentDeviceHolder);
+            setResult(RESULT_OK, intent);
+        }
         finish();
     }
 
     private void cancel() {
         Intent intent = new Intent();
-        BluetoothDevice res = null;
-        intent.putExtra(DEVICE_EXTRA, res);
         setResult(NONE, intent);
         finish();
     }
@@ -150,6 +150,7 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
     }
 
+
     private void scanDevices(final boolean enable) {
         setScanning(enable);
         if (enable) {
@@ -161,17 +162,18 @@ public class DeviceScanActivity extends AppCompatActivity {
             for (final int BLE_NAME_ID : BLE_NAME_IDS) {
                 // only search for wearables
                 ScanFilter filter = new ScanFilter.Builder()
-                        //.setDeviceName("TECO WEARABLE " + BLE_NAME_ID)
+                        //.setDeviceName("TECO WEARABLE " + BLE_NAME_ID) // filters not working
                         //.setServiceUuid(new ParcelUuid(SERVICE_UUID))
                         .build();
                 filters.add(filter);
             }
+
             ScanSettings settings = new ScanSettings.Builder()
-                    .setReportDelay(3000)
+                    .setReportDelay(0)
                     .build();
-            bluetoothAdapter.getBluetoothLeScanner().startScan(filters, settings, new ScanningCallback());
+            bluetoothAdapter.getBluetoothLeScanner().startScan(filters, settings, callback);
         } else {
-            bluetoothAdapter.getBluetoothLeScanner().stopScan(new ScanningCallback());
+            bluetoothAdapter.getBluetoothLeScanner().stopScan(callback);
         }
     }
 
@@ -189,15 +191,15 @@ public class DeviceScanActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         initBLE();
-        String name;
+        /*String name;
         if (currentDevice == null) {
             name = "none";
         } else if (currentDevice.getName() == null) {
             name = DeviceHolder.DEFAULT_DEVICE_NAME;
         } else {
             name = currentDevice.getName();
-        }
-        selectedDeviceView.setText((currentDevice != null) ?  name : "none");
+        }*/
+        selectedDeviceView.setText((currentDeviceHolder != null) ?  currentDeviceHolder.getName() : "none");
     }
 
     @Override
@@ -217,16 +219,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                 Log.d(MainActivity.BLE_LOG, "Scan result while not scanning.");
                 return;
             }
-            Toast.makeText(DeviceScanActivity.this, "result found", Toast.LENGTH_SHORT).show();
-            BluetoothDevice bleDevice = result.getDevice();
-
-            DeviceHolder device = new DeviceHolder(bleDevice, bleDevice.getName(), bleDevice.getAddress());
-            if (!adapter.contains(device)) {
-                adapter.add(device);
-                Log.d(MainActivity.BLE_LOG, "device added.");
-            } else {
-                Log.d(MainActivity.BLE_LOG, "already added device found.");
-            }
+            handleResult(callbackType, result);
             DeviceScanActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
                     adapter.notifyDataSetChanged();
@@ -241,21 +234,32 @@ public class DeviceScanActivity extends AppCompatActivity {
                 return;
             }
             for (ScanResult result : results) {
-                BluetoothDevice bleDevice = result.getDevice();
-                DeviceHolder device = new DeviceHolder(bleDevice, bleDevice.getName(), bleDevice.getAddress());
-                if (!adapter.contains(device)) {
-                    adapter.add(device);
-                    Log.d(MainActivity.BLE_LOG,  "device added.");
-                } else {
-                    Log.d(MainActivity.BLE_LOG,  "already added device found.");
-                }
-                Toast.makeText(DeviceScanActivity.this, "batch result found", Toast.LENGTH_SHORT).show();
+                handleResult(1, result);
             }
             DeviceScanActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
                     adapter.notifyDataSetChanged();
                 }
             });
+            DeviceScanActivity.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    adapter.notifyDataSetChanged();
+                }
+            });
+        }
+
+        private void handleResult(int callbackType, ScanResult result) {
+            BluetoothDevice bleDevice = result.getDevice();
+            DeviceHolder device = new DeviceHolder(bleDevice, result.getScanRecord().getDeviceName(), bleDevice.getAddress());
+            Log.d(MainActivity.BLE_LOG, "uuids: " + device.toString());
+            Log.d(MainActivity.BLE_LOG, "result:" + result.toString());
+            Log.d(MainActivity.BLE_LOG, "uuid: " + Arrays.toString(result.getDevice().getUuids()));
+            if (!adapter.contains(device)) {
+                adapter.add(device);
+                Log.d(MainActivity.BLE_LOG, "device added.");
+            } else {
+                Log.d(MainActivity.BLE_LOG, "already added device found.");
+            }
         }
 
         @Override
@@ -269,7 +273,7 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
     }
 
-    public static void start(Activity activity, int requestCode, BluetoothDevice device) {
+    public static void start(Activity activity, int requestCode, DeviceHolder device) {
         Intent intent = new Intent(activity, DeviceScanActivity.class);
         intent.putExtra(CURRENT_DEVICE_EXTRA, device);
         activity.startActivityForResult(intent, requestCode);

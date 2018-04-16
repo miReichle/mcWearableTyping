@@ -24,6 +24,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import michaelreichle.tenfingertyping.DeviceListView.DeviceHolder;
+
 import static michaelreichle.tenfingertyping.R.id.floatingActionButton;
 
 public class MainActivity extends AppCompatActivity {
@@ -50,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private int maxAllowedCpm = -1;
 
     private boolean isRunning = false;
-    BluetoothDevice device = null;
+    DeviceHolder deviceHolder = null;
 
     final Handler handler = new Handler();
     final Runnable runnable = new Runnable() {
@@ -157,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(gattUpdateReceiver, new IntentFilter());
 
-        if (device != null) {
+        if (deviceHolder != null && deviceHolder.getDevice() != null) {
             bindBluetoothService();
         }
     }
@@ -165,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
     private void bindBluetoothService() {
         if (connection != null) unbindService(connection);
         Intent intent = new Intent(this, BluetoothService.class);
-        intent.putExtra(BluetoothService.DEVICE_ARG, device);
+        intent.putExtra(BluetoothService.DEVICE_ARG, deviceHolder);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
 
@@ -206,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showConnectScreen() {
-        DeviceScanActivity.start(this, DEVICE_SCAN_REQUEST, device);
+        DeviceScanActivity.start(this, DEVICE_SCAN_REQUEST, deviceHolder);
     }
 
     @Override
@@ -214,9 +216,9 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case DEVICE_SCAN_REQUEST:
                 if (resultCode == Activity.RESULT_OK) {
-                    device = data.getParcelableExtra(DeviceScanActivity.DEVICE_EXTRA);
+                    deviceHolder = data.getParcelableExtra(DeviceScanActivity.DEVICE_EXTRA);
                     bindBluetoothService();
-                    Toast.makeText(this, "Selected " + device.getName() + ".", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Selected " + deviceHolder.getName() + ".", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(this, "Did not connect to a BLE device.", Toast.LENGTH_SHORT).show();
                 }
