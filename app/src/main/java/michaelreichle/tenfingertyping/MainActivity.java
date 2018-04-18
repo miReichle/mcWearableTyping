@@ -1,6 +1,7 @@
 package michaelreichle.tenfingertyping;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -46,13 +47,14 @@ public class MainActivity extends AppCompatActivity {
     private int currentCharIndex = 0;
 
     private int cpm;
-    private int MAX_CPM = 510;
     private int MIN_CPM = 10;
     private int maxAllowedCpm = -1;
 
     private boolean isRunning = false;
     DeviceHolder deviceHolder = null;
+    // in order not to call bindService twice
     private boolean onActivityResult = false;
+    private ProgressDialog progressDialog;
 
     final Handler handler = new Handler();
     final Runnable runnable = new Runnable() {
@@ -117,8 +119,9 @@ public class MainActivity extends AppCompatActivity {
 
             if (BluetoothService.ACTION_GATT_CONNECTED.equals(action)) {
                 connected = true;
-                Toast.makeText(MainActivity.this, "connected", Toast.LENGTH_SHORT).show();
+                progressDialog.setMessage("Discover services...");
             } else if (BluetoothService.ACTION_GATT_DISCONNECTED.equals(action)) {
+                progressDialog.cancel();
                 connected = false;
                 discovered = false;
                 maxAllowedCpm = -1;
@@ -128,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!bluetoothService.getMaxFrequency()) {
                     Toast.makeText(MainActivity.this, "Couldn't get frequency and monitor count.", Toast.LENGTH_SHORT).show();
                 }
+                progressDialog.setMessage("Get maximal frequency...");
             } else if (BluetoothService.ACTION_DATA_AVAILABLE.equals(action)) {
                 if (BluetoothService.RESULT_MONITOR_COUNT.equals(intent.getStringExtra(BluetoothService.RESULT_DATA))) {
                     monitorCount = intent.getIntExtra(BluetoothService.EXTRA_DATA, -1);
@@ -135,8 +139,11 @@ public class MainActivity extends AppCompatActivity {
                     int frequency = intent.getIntExtra(BluetoothService.EXTRA_DATA, -1);
                     maxAllowedCpm = frequency * 60;
                 }
+                progressDialog.cancel();
                 if (deviceReady()) {
                     Toast.makeText(MainActivity.this, "Device ready!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "Couldn't instantiate device", Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -231,7 +238,9 @@ public class MainActivity extends AppCompatActivity {
                     deviceHolder = data.getParcelableExtra(DeviceScanActivity.DEVICE_EXTRA);
                     bindBluetoothService();
                     onActivityResult = true;
-                    Toast.makeText(this, "Selected " + deviceHolder.getName() + ".", Toast.LENGTH_SHORT).show();
+                    progressDialog.setTitle(deviceHolder.getName());
+                    progressDialog.setMessage("Connecting...");
+                    progressDialog.show();
                 } else {
                     Toast.makeText(this, "Did not select a new BLE device.", Toast.LENGTH_SHORT).show();
                 }
@@ -266,6 +275,11 @@ public class MainActivity extends AppCompatActivity {
         text = getResources().getString(R.string.typeText);
         currentWord = text.substring(0, text.indexOf(' '));
         setCpm(MIN_CPM);
+
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle("Connecting");
+        progressDialog.setCancelable(true);
+        progressDialog.setMessage("");
 
         cpmBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             int progress;
