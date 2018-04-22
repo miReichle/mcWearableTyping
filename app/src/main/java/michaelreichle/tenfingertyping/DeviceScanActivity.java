@@ -64,8 +64,6 @@ public class DeviceScanActivity extends AppCompatActivity implements OnDeviceCon
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device_scan);
         init();
-        adapter.add(new DeviceHolder(null, "test", "test")); // TODO remove
-        adapter.add(new DeviceHolder(null, "banane", "banane"));
     }
 
     @Override
