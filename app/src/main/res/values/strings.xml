@@ -11,6 +11,8 @@
     <string name="text_source">text source</string>
     <string name="cancel">Cancel</string>
     <string name="selected_device">current:</string>
+    <string name="teco_wearable_4">TECO Wearable 4</string>
+    <string name="default_mac">FF-FF-FF-FF-FF-FF</string>
     <string-array name="text_variants">
         <item>Default</item>
         <item>Random</item>

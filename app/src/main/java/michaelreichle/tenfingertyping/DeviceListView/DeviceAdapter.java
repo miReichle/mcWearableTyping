@@ -1,11 +1,11 @@
 package michaelreichle.tenfingertyping.DeviceListView;
 
 import android.content.Context;
-import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import java.util.List;
@@ -19,15 +19,15 @@ import michaelreichle.tenfingertyping.R;
 public class DeviceAdapter extends BaseAdapter {
 
     public static long DEFAULT_DEVICE_ID;
-    public static int NONE = -1;
 
     private List<DeviceHolder> devices;
     private Context context;
-    private int selectedPosition = NONE;
+    private OnDeviceConnectClicked listener;
 
-    public DeviceAdapter(Context context, List<DeviceHolder> devices) {
+    public DeviceAdapter(Context context, List<DeviceHolder> devices, OnDeviceConnectClicked listener) {
         this.context = context;
         this.devices = devices;
+        this.listener = listener;
     }
 
     @Override
@@ -47,28 +47,34 @@ public class DeviceAdapter extends BaseAdapter {
 
     @Override
     public View getView(int i, View view, ViewGroup parent) {
-        // inflate the layout for each list row
         if (view == null) {
             view = LayoutInflater.from(context).
                     inflate(R.layout.device_list_view_item, parent, false);
         }
-
-        // get current item to be displayed
         DeviceHolder currentItem = (DeviceHolder) getItem(i);
 
-        int color = (i == selectedPosition) ? R.color.backgroundItemSelected : R.color.backgroundItemNotSelected;
+        TextView nameView = (TextView) view.findViewById(R.id.device_name);
+        TextView addressView = (TextView) view.findViewById(R.id.device_address);
+        ImageButton connectButton = (ImageButton) view.findViewById(R.id.connectButton);
 
-        view.findViewById(R.id.background).setBackgroundColor(ContextCompat.getColor(context, color));
+        String name = currentItem.getName();
+        if (name.length() >= 20) {
+            name = name.substring(0, 20) + "…";
+        }
+        nameView.setText(name);
+        addressView.setText(currentItem.getMac());
 
-        // get the TextView for item name and item description
-        TextView name = (TextView)
-                view.findViewById(R.id.device_name);
-        TextView address = (TextView)
-                view.findViewById(R.id.device_adress);
-
-        //sets the text for item name and item description from the current item object
-        name.setText(currentItem.getName());
-        address.setText(currentItem.getMac());
+        connectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                listener.connect(currentItem);
+            }
+        });
+        boolean enable = currentItem.isSupported();
+        connectButton.setEnabled(enable);
+        connectButton.setClickable(enable);
+        int backgroundId = (enable) ? R.color.enabled_background : R.color.disabled_background;
+        connectButton.setBackgroundTintList(context.getResources().getColorStateList(backgroundId));
 
         // returns the view for the current row
         return view;
@@ -81,17 +87,6 @@ public class DeviceAdapter extends BaseAdapter {
 
     public boolean contains(DeviceHolder device) {
         return devices.contains(device);
-    }
-
-    public void setSelectedPosition(int position) {
-        if (position >= 0 && position < getCount()) {
-            this.selectedPosition = position;
-            notifyDataSetChanged();
-        }
-    }
-
-    public int getSelectedPosition() {
-        return this.selectedPosition;
     }
 
     public void clear() {

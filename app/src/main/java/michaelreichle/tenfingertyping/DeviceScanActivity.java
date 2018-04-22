@@ -1,5 +1,6 @@
 package michaelreichle.tenfingertyping;
 
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,14 +11,18 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,8 +34,9 @@ import java.util.UUID;
 
 import michaelreichle.tenfingertyping.DeviceListView.DeviceAdapter;
 import michaelreichle.tenfingertyping.DeviceListView.DeviceHolder;
+import michaelreichle.tenfingertyping.DeviceListView.OnDeviceConnectClicked;
 
-public class DeviceScanActivity extends AppCompatActivity {
+public class DeviceScanActivity extends AppCompatActivity implements OnDeviceConnectClicked {
 
     public static final int NONE = 0;
     public static final int SUCCESS = 1;
@@ -38,6 +44,7 @@ public class DeviceScanActivity extends AppCompatActivity {
 
     private static final int BLE_NAME_IDS[] = {4};
     private final static int REQUEST_ENABLE_BT = 1;
+    private final static int REQUEST_ENABLE_LOCATION = 2;
     private static final String CURRENT_DEVICE_EXTRA = "cur_device_extra";
 
     // wearable specific values
@@ -47,7 +54,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     private FloatingActionButton fabSearch;
     private TextView selectedDeviceView;
     private ScanningCallback callback;
-    private DeviceHolder currentDeviceHolder;
+    private DeviceHolder selectedDevice;
 
     private BluetoothAdapter bluetoothAdapter;
     private boolean scanning;
@@ -57,31 +64,40 @@ public class DeviceScanActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device_scan);
         init();
-        //adapter.add(new DeviceHolder(null, "test", "test"));
-        //adapter.add(new DeviceHolder(null, "banane", "banane"));
+        adapter.add(new DeviceHolder(null, "test", "test")); // TODO remove
+        adapter.add(new DeviceHolder(null, "banane", "banane"));
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_device_scan, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.cancel:
+                cancel();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     private void init() {
         ListView deviceView = (ListView) findViewById(R.id.device_list_view);
         callback = new ScanningCallback();
-        adapter = new DeviceAdapter(this, new ArrayList<DeviceHolder>());
+        adapter = new DeviceAdapter(this, new ArrayList<DeviceHolder>(), this);
         deviceView.setAdapter(adapter);
-        deviceView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                adapter.setSelectedPosition(i);
-                currentDeviceHolder = (DeviceHolder) adapter.getItem(i);
-            }
-        });
         selectedDeviceView = (TextView) findViewById(R.id.selectedDevice);
         Bundle b = getIntent().getExtras();
         if (b != null) {
-            currentDeviceHolder = b.getParcelable(CURRENT_DEVICE_EXTRA);
-            selectedDeviceView.setText((currentDeviceHolder != null) ? currentDeviceHolder.getName() : "none");
+            selectedDevice = b.getParcelable(CURRENT_DEVICE_EXTRA);
+            selectedDeviceView.setText((selectedDevice!= null) ? selectedDevice.getName() : "none");
         }
 
-        Button buttonCancel = (Button) findViewById(R.id.cancelButton);
-        Button buttonConnect = (Button) findViewById(R.id.connectButton);
         fabSearch = (FloatingActionButton) findViewById(R.id.fabSearch);
 
         fabSearch.setOnClickListener(new View.OnClickListener() {
@@ -92,18 +108,6 @@ public class DeviceScanActivity extends AppCompatActivity {
                 } else {
                     scanDevices(true);
                 }
-            }
-        });
-        buttonCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                cancel();
-            }
-        });
-        buttonConnect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                connect();
             }
         });
     }
@@ -117,29 +121,17 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
     }
 
-    private void connect() {
-        Intent intent = new Intent();
-        if (currentDeviceHolder == null) {
-            setResult(NONE, intent);
-        } else if (!currentDeviceHolder.isSupported()) {
-            Toast.makeText(this, "Device not supported.", Toast.LENGTH_SHORT).show();
-            setResult(NONE, intent);
-        } else {
-            intent.putExtra(DEVICE_EXTRA, currentDeviceHolder);
-            setResult(RESULT_OK, intent);
-        }
-        finish();
-    }
-
     private void cancel() {
         Intent intent = new Intent();
         setResult(NONE, intent);
         finish();
     }
 
-    // TODO: check if device can be found
     private void initBLE() {
-        // TODO: check for services
+        boolean fineLocationPermissionGranted = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        if (!fineLocationPermissionGranted) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_ENABLE_LOCATION);
+        }
         if (bluetoothAdapter == null) {
             final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             bluetoothAdapter = bluetoothManager.getAdapter();
@@ -151,6 +143,16 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_ENABLE_LOCATION: {
+                if (grantResults[0] != PackageManager.PERMISSION_GRANTED || grantResults[1] != PackageManager.PERMISSION_GRANTED) {
+                    cancel();
+                }
+            }
+        }
+    }
 
     private void scanDevices(final boolean enable) {
         setScanning(enable);
@@ -200,7 +202,7 @@ public class DeviceScanActivity extends AppCompatActivity {
         } else {
             name = currentDevice.getName();
         }*/
-        selectedDeviceView.setText((currentDeviceHolder != null) ?  currentDeviceHolder.getName() : "none");
+        selectedDeviceView.setText((selectedDevice != null) ?  selectedDevice.getName() : "none");
     }
 
     @Override
@@ -210,6 +212,21 @@ public class DeviceScanActivity extends AppCompatActivity {
             scanDevices(false);
         }
         adapter.clear();
+    }
+
+    @Override
+    public void connect(DeviceHolder holder) {
+        Intent intent = new Intent();
+        if (holder == null) {
+            setResult(NONE, intent);
+        } else if (!holder.isSupported()) {
+            Toast.makeText(this, "Device not supported.", Toast.LENGTH_SHORT).show();
+            setResult(NONE, intent);
+        } else {
+            intent.putExtra(DEVICE_EXTRA, holder);
+            setResult(RESULT_OK, intent);
+        }
+        finish();
     }
 
     private class ScanningCallback extends ScanCallback {
