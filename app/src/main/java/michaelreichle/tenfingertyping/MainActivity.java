@@ -5,6 +5,7 @@ import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -14,12 +15,15 @@ import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -63,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                 handler.removeCallbacks(this);
                 Log.d(RUNNABLE_LOG,"stopped");
                 if (text.isEmpty()) {
-                    reset();
+                    reset(getResources().getString(R.string.default_text_source));
                 }
             } else {
                 char currentChar = text.charAt(0);
@@ -77,9 +81,17 @@ public class MainActivity extends AppCompatActivity {
                     charView.setText("");
                     rightView.setText("");
                 } else {
-                    leftView.setText(currentWord.substring(0, currentCharIndex));
+                    String left = currentWord.substring(0, currentCharIndex);
+                    String right = currentWord.substring(currentCharIndex + 1);
+                    if (left.length() > 8) {
+                        left = left.substring(left.length() - 8, left.length());
+                    }
+                    if (right.length() > 8) {
+                        right = right.substring(0, 8);
+                    }
+                    leftView.setText(left);
                     charView.setText(String.valueOf(currentChar));
-                    rightView.setText(currentWord.substring(currentCharIndex + 1));
+                    rightView.setText(right);
                     currentCharIndex++;
                 }
                 textView.setText(text);
@@ -149,18 +161,24 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void reset() {
+    private void reset(String newText) {
+        if (newText.equals("")) {
+            Toast.makeText(this, "Text empty. Setting default text.", Toast.LENGTH_SHORT).show();
+            newText = getResources().getString(R.string.default_text_source);
+        }
         String l = getResources().getString(R.string.left);
         String r = getResources().getString(R.string.right);
         String c = getResources().getString(R.string.startingCharacter);
-        String t = getResources().getString(R.string.typeText);
         leftView.setText(l);
         rightView.setText(r);
         charView.setText(c);
-        textView.setText(t);
+        textView.setText(newText);
         currentWord = "";
-        text = t;
-        currentWord = text.substring(0, text.indexOf(' '));
+        this.text = newText;
+
+        int i = this.text.indexOf(' ');
+        if (i == -1) i = this.text.length();
+        currentWord = this.text.substring(0, i);
         currentCharIndex = 0;
         stopWriting();
     }
@@ -215,15 +233,11 @@ public class MainActivity extends AppCompatActivity {
                 showConnectScreen();
                 return true;
             case R.id.text_options:
-                showTextOptions();
+                showChooseTextVariantDialog();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
-    }
-
-    private void showTextOptions() {
-        // TODO: set options
     }
 
     private void showConnectScreen() {
@@ -272,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
         rightView = (TextView) findViewById(R.id.textRightView);
         leftView = (TextView) findViewById(R.id.textLeftView);
 
-        text = getResources().getString(R.string.typeText);
+        text = getResources().getString(R.string.default_text_source);
         currentWord = text.substring(0, text.indexOf(' '));
         setCpm(MIN_CPM);
 
@@ -375,5 +389,71 @@ public class MainActivity extends AppCompatActivity {
         if (maxAllowedCpm != -1 && value > maxAllowedCpm) {
             Toast.makeText(this, "Chosen cpm is too high for wearable.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showChooseTextVariantDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Choose Text Variant")
+                .setItems(R.array.text_variants, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                switch (which) {
+                                    case 0:
+                                        setDefaultText();
+                                        break;
+                                    case 1:
+                                        setRandomText();
+                                        break;
+                                    case 2:
+                                        setInputText();
+                                        break;
+                                    case 3:
+                                        filterOnlySupportedText();
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void setDefaultText() {
+        reset(getResources().getString(R.string.default_text_source));
+    }
+
+    private void setRandomText() {
+        reset(CharacterMap.getRandomSupportedText(monitorCount, 100));
+    }
+
+    private void setInputText() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        final EditText input = new EditText(MainActivity.this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT);
+        input.setLayoutParams(lp);
+
+        builder.setTitle("Type Text")
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        reset(input.getText().toString());
+                        dialogInterface.cancel();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.cancel();
+                    }
+                })
+                .setView(input)
+                .show();
+    }
+
+    private void filterOnlySupportedText() {
+        reset(CharacterMap.filterSupported(this.text));
     }
 }

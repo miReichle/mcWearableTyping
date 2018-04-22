@@ -67,7 +67,7 @@
         android:background="@color/grey"
         android:ems="10"
         android:padding="16dp"
-        android:text="@string/typeText" />
+        android:text="@string/default_text_source" />
 
     <RelativeLayout
         android:id="@+id/currentViewLayout"
