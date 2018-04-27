@@ -13,6 +13,10 @@
     <string name="selected_device">current:</string>
     <string name="teco_wearable_4">TECO Wearable 4</string>
     <string name="default_mac">FF-FF-FF-FF-FF-FF</string>
+    <string name="none">none</string>
+    <string name="status">status</string>
+    <string name="ready">ready</string>
+    <string name="pending">pending</string>
     <string-array name="text_variants">
         <item>Default</item>
         <item>Random</item>

@@ -45,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView leftView;
     private TextView rightView;
     private TextView textView;
+    private TextView deviceStatusView;
+    private TextView deviceNameView;
 
     private String text;
     private String currentWord = "";
@@ -158,8 +160,19 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Couldn't instantiate device", Toast.LENGTH_SHORT).show();
                 }
             }
+            setDeviceViews();
         }
     };
+
+    private void setDeviceViews() {
+        if (deviceReady()) {
+            deviceStatusView.setText(R.string.ready);
+            deviceNameView.setText(deviceHolder.getName());
+        } else {
+            deviceStatusView.setText(R.string.pending);
+            deviceNameView.setText(R.string.none);
+        }
+    }
 
     private void reset(String newText) {
         if (newText.equals("")) {
@@ -285,10 +298,13 @@ public class MainActivity extends AppCompatActivity {
         charView = (TextView) findViewById(R.id.currentChar);
         rightView = (TextView) findViewById(R.id.textRightView);
         leftView = (TextView) findViewById(R.id.textLeftView);
+        deviceNameView = (TextView) findViewById(R.id.device);
+        deviceStatusView = (TextView) findViewById(R.id.device_status_text);
 
         text = getResources().getString(R.string.default_text_source);
         currentWord = text.substring(0, text.indexOf(' '));
         setCpm(MIN_CPM);
+        setDeviceViews();
 
         progressDialog = new ProgressDialog(this);
         progressDialog.setTitle("Connecting");
@@ -338,7 +354,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean deviceReady() {
-        return bound && connected && discovered && monitorCount != -1;
+        return deviceHolder != null && bound && connected && discovered && monitorCount != -1 && maxAllowedCpm != -1;
     }
 
     private byte[] noVibration() {

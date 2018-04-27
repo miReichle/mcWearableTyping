@@ -126,10 +126,6 @@ public class DeviceScanActivity extends AppCompatActivity implements OnDeviceCon
     }
 
     private void initBLE() {
-        boolean fineLocationPermissionGranted = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        if (!fineLocationPermissionGranted) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_ENABLE_LOCATION);
-        }
         if (bluetoothAdapter == null) {
             final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             bluetoothAdapter = bluetoothManager.getAdapter();
@@ -138,6 +134,11 @@ public class DeviceScanActivity extends AppCompatActivity implements OnDeviceCon
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        } else {
+            boolean fineLocationPermissionGranted = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            if (!fineLocationPermissionGranted) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_ENABLE_LOCATION);
+            }
         }
     }
 
@@ -156,7 +157,8 @@ public class DeviceScanActivity extends AppCompatActivity implements OnDeviceCon
         setScanning(enable);
         if (enable) {
             if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
-                Toast.makeText(this, "Scan failed.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Scan failed. Try to activate Bluetooth.", Toast.LENGTH_SHORT).show();
+                setScanning(false);
                 return;
             }
             ArrayList<ScanFilter> filters = new ArrayList<>();
@@ -174,15 +176,26 @@ public class DeviceScanActivity extends AppCompatActivity implements OnDeviceCon
                     .build();
             bluetoothAdapter.getBluetoothLeScanner().startScan(filters, settings, callback);
         } else {
-            bluetoothAdapter.getBluetoothLeScanner().stopScan(callback);
+            if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+                Toast.makeText(this, "Bluetooth disabled.", Toast.LENGTH_LONG).show();
+            } else {
+                bluetoothAdapter.getBluetoothLeScanner().stopScan(callback);
+            }
         }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // User chose not to enable Bluetooth.
-        if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED) {
-            cancel();
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (resultCode == Activity.RESULT_CANCELED) {
+                cancel();
+            } else {
+                boolean fineLocationPermissionGranted = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                if (!fineLocationPermissionGranted) {
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_ENABLE_LOCATION);
+                }
+            }
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
