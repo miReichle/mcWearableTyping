@@ -169,8 +169,13 @@ public class MainActivity extends AppCompatActivity {
             deviceStatusView.setText(R.string.ready);
             deviceNameView.setText(deviceHolder.getName());
         } else {
-            deviceStatusView.setText(R.string.pending);
-            deviceNameView.setText(R.string.none);
+            if (deviceHolder != null) {
+                deviceNameView.setText(deviceHolder.getName());
+                deviceNameView.setText(R.string.pending);
+            } else {
+                deviceStatusView.setText("");
+                deviceNameView.setText(R.string.none);
+            }
         }
     }
 
