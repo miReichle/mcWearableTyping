@@ -171,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             if (deviceHolder != null) {
                 deviceNameView.setText(deviceHolder.getName());
-                deviceNameView.setText(R.string.pending);
+                deviceStatusView.setText(R.string.pending);
             } else {
                 deviceStatusView.setText("");
                 deviceNameView.setText(R.string.none);

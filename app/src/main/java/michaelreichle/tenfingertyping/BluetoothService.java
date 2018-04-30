@@ -11,7 +11,6 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -177,9 +176,7 @@ public class BluetoothService extends Service {
 
     public void setDevice(BluetoothDevice device) {
         if (device == null) {
-            Log.w(TAG, "given device is null");
-            Toast.makeText(this, "Started service with null device!", Toast.LENGTH_LONG).show();
-
+            Log.e(TAG, "given device is null");
         } else {
             connectionState = STATE_DISCONNECTED;
             discoveredServices = false;
